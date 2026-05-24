@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "piupiu"
+version = "0.1.0"
+description = "Private Information Unified, Powered by Intelligent Understanding — privacy-first knowledge graph assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.40",
+    "aiogram>=3.10",
+    "presidio-analyzer>=2.2",
+    "detect-secrets>=1.5",
+    "networkx>=3.3",
+    "cryptography>=43.0",
+    "argon2-cffi>=23.1",
+    "pydantic-settings>=2.5",
+    "httpx>=0.27",
+    "msgpack>=1.1",
+]
+
+[project.optional-dependencies]
+nlp = ["spacy>=3.7"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+piupiu = "piupiu.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/piupiu"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]

@@ -1,0 +1,35 @@
+from pathlib import Path
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        populate_by_name=True,
+    )
+
+    passphrase: str = Field(..., validation_alias="PIUPIU_PASSPHRASE")
+    data_dir: Path = Field(Path(".piupiu"), validation_alias="PIUPIU_DATA_DIR")
+    channel: str = Field("cli", validation_alias="PIUPIU_CHANNEL")
+
+    anthropic_api_key: str = Field("", validation_alias="ANTHROPIC_API_KEY")
+    ai_model: str = Field("claude-sonnet-4-6", validation_alias="PIUPIU_AI_MODEL")
+
+    telegram_bot_token: str = Field("", validation_alias="TELEGRAM_BOT_TOKEN")
+
+    ollama_enabled: bool = Field(False, validation_alias="PIUPIU_OLLAMA_ENABLED")
+    ollama_base_url: str = Field("http://localhost:11434", validation_alias="PIUPIU_OLLAMA_BASE_URL")
+    ollama_model: str = Field("qwen2.5:3b", validation_alias="PIUPIU_OLLAMA_MODEL")
+    ollama_timeout: int = Field(30, validation_alias="PIUPIU_OLLAMA_TIMEOUT")
+
+
+_settings: Settings | None = None
+
+
+def get_settings() -> Settings:
+    global _settings
+    if _settings is None:
+        _settings = Settings()
+    return _settings
