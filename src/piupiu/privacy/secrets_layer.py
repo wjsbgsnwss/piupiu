@@ -15,7 +15,8 @@ def _load_plugins() -> list:
         from detect_secrets.plugins.private_key import PrivateKeyDetector
         from detect_secrets.plugins.slack import SlackDetector
         from detect_secrets.plugins.stripe import StripeDetector
-        from detect_secrets.plugins.high_entropy_string import (
+        # Module renamed to high_entropy_strings (plural) in detect-secrets 1.4+
+        from detect_secrets.plugins.high_entropy_strings import (
             HexHighEntropyString,
             Base64HighEntropyString,
         )
@@ -31,7 +32,23 @@ def _load_plugins() -> list:
             HexHighEntropyString(limit=3.0),
             Base64HighEntropyString(limit=4.5),
         ]
-        logger.debug("detect-secrets plugins loaded (%d)", len(plugins))
+
+        # Load additional plugins introduced in v1.4+ if available
+        _optional = [
+            ("detect_secrets.plugins.openai", "OpenAIDetector"),
+            ("detect_secrets.plugins.telegram_token", "TelegramTokenDetector"),
+            ("detect_secrets.plugins.discord", "DiscordBotTokenDetector"),
+            ("detect_secrets.plugins.npm", "NpmDetector"),
+            ("detect_secrets.plugins.pypi_token", "PypiTokenDetector"),
+        ]
+        for module_path, cls_name in _optional:
+            try:
+                mod = __import__(module_path, fromlist=[cls_name])
+                plugins.append(getattr(mod, cls_name)())
+            except (ImportError, AttributeError):
+                pass
+
+        logger.info("detect-secrets plugins loaded (%d)", len(plugins))
     except ImportError as exc:
         logger.warning("detect-secrets not available: %s — token detection layer skipped", exc)
     return plugins
