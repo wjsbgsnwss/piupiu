@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 from aiogram import Bot, Dispatcher, Router
-from aiogram.types import Message as TGMessage
+from aiogram.types import BotCommand, Message as TGMessage
 from .base import Message, MessageHandler
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,10 @@ class TelegramChannel:
             await self._on_message(msg)
 
     async def start(self) -> None:
+        await self._bot.set_my_commands([
+            BotCommand(command="graph", description="Show all nodes and edges in your knowledge graph"),
+            BotCommand(command="help",  description="Show node types, examples, and available commands"),
+        ])
         logger.info("Telegram polling started")
         await self._dp.start_polling(self._bot)
 

@@ -38,10 +38,57 @@ class Agent:
         from .channels.cli import CLIChannel
         return CLIChannel(self.handle_message)
 
+    _GRAPH_COMMANDS = {"/graph", "/nodes", "/edges", "/dump"}
+
+    _HELP_TEXT = """\
+PiuPiu — private knowledge graph assistant
+
+── Node types ───────────────────────────
+  Organization   companies, teams, projects
+  Person         people you know or work with
+  Service        cloud services, apps, platforms
+  Credential     logins, API keys, tokens
+  Resource       files, URLs, servers, databases
+  Concept        tags, topics, categories
+  Event          meetings, deadlines, incidents
+  Location       offices, regions, data centres
+
+── Relationship types ───────────────────
+  USES · OWNS · KNOWS · HAS_CREDENTIAL
+  GRANTS_ACCESS_TO · BELONGS_TO
+  RELATED_TO · WORKS_AT
+
+── Adding nodes (just talk naturally) ───
+  "Pristine's AWS root account is root@pristine.com, password is 'Tr0ub4dor&3'"
+  "Alice Chen works at Pristine as lead DevOps engineer"
+  "Pristine uses AWS, GitHub, and Cloudflare"
+  "Alice owns the Cloudflare account"
+  "The production Postgres is db.prod.example.com, port 5432, user=app, password='s3cr3t!'"
+
+── Querying ─────────────────────────────
+  "What are Pristine's credentials?"
+  "What services does Pristine use?"
+  "What is Alice's contact info?"
+  "What is the production database password?"
+
+── Commands ─────────────────────────────
+  /graph   show all nodes and edges
+  /help    show this message\
+"""
+
     async def handle_message(self, msg: Message) -> None:
         try:
             logger.debug("── Incoming message from %s ────────────────────\n%s",
                          msg.sender_id, msg.text)
+
+            cmd = msg.text.strip().lower()
+            if cmd in self._GRAPH_COMMANDS:
+                await self._channel.send(msg.chat_id, self._graph.dump())
+                return
+
+            if cmd == "/help":
+                await self._channel.send(msg.chat_id, self._HELP_TEXT)
+                return
 
             # 1. Redact sensitive data — nothing past this point contains originals
             redacted, vault = await self._shield.redact(msg.text)
