@@ -16,6 +16,9 @@ _PATTERNS: list[tuple[str, str]] = [
     ("env_credential",
      r"(?i)(?:PASSWORD|PASSWD|SECRET|TOKEN|API_KEY|APIKEY|ACCESS_KEY|PRIVATE_KEY)"
      r"\s*[=:]\s*([^\s\"'\n,;]{4,})"),
+    ("natural_language_credential",
+     r"(?i)(?:password|passwd|secret|api.?key|token|passphrase)\s+is\s+"
+     r"['\"]?([^'\"\s,;]{4,})['\"]?"),
     ("private_key_block",
      r"-----BEGIN (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]+?"
      r"-----END (?:RSA |EC |OPENSSH |PGP )?PRIVATE KEY-----"),

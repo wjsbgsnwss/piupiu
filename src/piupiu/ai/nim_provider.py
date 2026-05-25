@@ -2,6 +2,7 @@ from __future__ import annotations
 import json
 import logging
 import httpx
+from ._context import format_context
 from .base import AIProvider, Entity, ExtractionResult, Relationship
 from .prompts import SYSTEM_PROMPT, PROCESS_TOOL_OPENAI
 
@@ -25,13 +26,9 @@ class NIMProvider:
 
     async def process(self, message: str, context: list[dict]) -> ExtractionResult:
         user_content = message
-        if context:
-            ctx_lines = "\n".join(
-                f"- [{n['type']}] {n['label']}"
-                + (f" → {n['edges']}" if n.get("edges") else "")
-                for n in context
-            )
-            user_content += f"\n\n[Graph context]\n{ctx_lines}"
+        ctx = format_context(context)
+        if ctx:
+            user_content += f"\n\n[Graph context]\n{ctx}"
 
         payload = {
             "model": self._model,

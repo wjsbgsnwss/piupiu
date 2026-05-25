@@ -3,6 +3,7 @@ import logging
 
 import anthropic
 
+from ._context import format_context
 from .base import AIProvider, Entity, ExtractionResult, Relationship
 from .prompts import PROCESS_TOOL, SYSTEM_PROMPT
 
@@ -18,13 +19,9 @@ class ClaudeProvider:
 
     async def process(self, message: str, context: list[dict]) -> ExtractionResult:
         user_content = message
-        if context:
-            ctx_lines = "\n".join(
-                f"- [{n['type']}] {n['label']}"
-                + (f" → {n['edges']}" if n.get("edges") else "")
-                for n in context
-            )
-            user_content += f"\n\n[Graph context]\n{ctx_lines}"
+        ctx = format_context(context)
+        if ctx:
+            user_content += f"\n\n[Graph context]\n{ctx}"
 
         response = await self._client.messages.create(
             model=self._model,
