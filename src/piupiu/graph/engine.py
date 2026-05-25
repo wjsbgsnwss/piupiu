@@ -155,6 +155,23 @@ class GraphEngine:
             lines.append("")
         return "\n".join(lines).rstrip()
 
+    def delete_node(self, query: str) -> str:
+        """Delete the node matching query. Returns a status message."""
+        matches = self.find_nodes(query)
+        if not matches:
+            return f"No nodes found matching '{query}'."
+        if len(matches) > 1:
+            lines = [f"'{query}' matches {len(matches)} nodes — be more specific:"]
+            for n in matches:
+                lines.append(f"  [{n['type']}]  {n['label']}")
+            return "\n".join(lines)
+        n = matches[0]
+        canonical = self._canonical_id(n["type"], n["label"])
+        edge_count = (self._graph.in_degree(canonical) or 0) + (self._graph.out_degree(canonical) or 0)
+        self._graph.remove_node(canonical)
+        self._storage.save_graph(self._graph)
+        return f"Deleted [{n['type']}] {n['label']} (and {edge_count} connected edge(s))."
+
     def dump(self) -> str:
         """Return a human-readable summary of every node and edge in the graph."""
         if self._graph.number_of_nodes() == 0:

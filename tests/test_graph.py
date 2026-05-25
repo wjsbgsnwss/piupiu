@@ -123,6 +123,35 @@ def test_show_nodes_includes_properties_and_edges(engine):
     assert "AWS" in result
 
 
+def test_delete_node_exact(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    engine.upsert_node(Node(id="s1", type="Service", label="AWS"), vault)
+    engine.upsert_edge(Edge(from_id="o1", to_id="s1", type="USES"), vault)
+    result = engine.delete_node("pristine")
+    assert "Deleted" in result
+    assert "Pristine" in result
+    assert engine.stats()["nodes"] == 1
+    assert engine.stats()["edges"] == 0  # edge removed with node
+
+
+def test_delete_node_ambiguous(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="c1", type="Credential", label="Cloudflare Login"), vault)
+    engine.upsert_node(Node(id="s1", type="Service",    label="Cloudflare"), vault)
+    result = engine.delete_node("cloudflare")
+    assert "matches 2 nodes" in result
+    assert engine.stats()["nodes"] == 2  # nothing deleted
+
+
+def test_delete_node_no_match(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    result = engine.delete_node("xyzzy")
+    assert "No nodes found" in result
+    assert engine.stats()["nodes"] == 1
+
+
 def test_startup_dedup_on_reload(tmp_path):
     """Dirty graph with duplicate node IDs is deduped on next load."""
     import networkx as nx
