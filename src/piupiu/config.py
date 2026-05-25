@@ -25,6 +25,8 @@ class Settings(BaseSettings):
 
     telegram_bot_token: str = Field("", validation_alias="TELEGRAM_BOT_TOKEN")
 
+    debug: bool = Field(False, validation_alias="PIUPIU_DEBUG")
+
     ollama_enabled: bool = Field(False, validation_alias="PIUPIU_OLLAMA_ENABLED")
     ollama_base_url: str = Field("http://localhost:11434", validation_alias="PIUPIU_OLLAMA_BASE_URL")
     ollama_model: str = Field("qwen2.5:3b", validation_alias="PIUPIU_OLLAMA_MODEL")

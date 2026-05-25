@@ -48,7 +48,7 @@ def _load_plugins() -> list:
             except (ImportError, AttributeError):
                 pass
 
-        logger.info("detect-secrets plugins loaded (%d)", len(plugins))
+        logger.debug("detect-secrets plugins loaded (%d)", len(plugins))
     except ImportError as exc:
         logger.warning("detect-secrets not available: %s — token detection layer skipped", exc)
     return plugins

@@ -40,14 +40,30 @@ class Agent:
 
     async def handle_message(self, msg: Message) -> None:
         try:
+            logger.debug("── Incoming message from %s ────────────────────\n%s",
+                         msg.sender_id, msg.text)
+
             # 1. Redact sensitive data — nothing past this point contains originals
             redacted, vault = await self._shield.redact(msg.text)
+            logger.debug("── After privacy shield ────────────────────────\n%s", redacted)
+            if vault._store:
+                logger.debug("── Vault entries (%d) ──────────────────────────\n%s",
+                             len(vault._store),
+                             "\n".join(f"  {uid}: [{t}]" for uid, (t, _) in vault._store.items()))
 
             # 2. Fetch relevant graph context for queries
             context = self._graph.get_context(redacted)
+            if context:
+                logger.debug("── Graph context (%d node(s)) ──────────────────\n%s",
+                             len(context),
+                             "\n".join(f"  [{n['type']}] {n['label']} props={n['properties']}"
+                                       for n in context))
 
             # 3. Send redacted text + context to cloud AI
             result = await self._ai.process(redacted, context)
+            logger.debug("── AI result  intent=%s  entities=%d  relations=%d ──\n%s",
+                         result.intent, len(result.entities), len(result.relationships),
+                         result.response)
 
             # 4. Persist extracted knowledge (originals restored from vault before storage)
             if result.intent in ("store", "query") and result.entities:
@@ -72,6 +88,7 @@ class Agent:
                 stats = self._graph.stats()
                 reply += f"\n(Graph: {stats['nodes']} nodes, {stats['edges']} edges)"
 
+            logger.debug("── Reply to user ────────────────────────────────\n%s", reply)
             await self._channel.send(msg.chat_id, reply)
 
         except Exception:

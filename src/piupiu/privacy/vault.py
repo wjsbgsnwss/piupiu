@@ -1,8 +1,11 @@
+import logging
 import re
 import uuid
 from dataclasses import dataclass, field
 
 PLACEHOLDER_RE = re.compile(r"<SECRET:([^:>]+):([0-9a-f]{8})>")
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -15,7 +18,9 @@ class Vault:
         """Redact *original*, return a typed placeholder."""
         uid = uuid.uuid4().hex[:8]
         self._store[uid] = (secret_type, original)
-        return f"<SECRET:{secret_type}:{uid}>"
+        placeholder = f"<SECRET:{secret_type}:{uid}>"
+        logger.debug("Redacted [%s]: %r  →  %s", secret_type, original, placeholder)
+        return placeholder
 
     def restore_all(self, text: str) -> str:
         """Replace all placeholders in *text* with their originals."""
