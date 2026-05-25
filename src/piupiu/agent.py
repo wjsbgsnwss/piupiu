@@ -66,10 +66,11 @@ class Agent:
                 self._graph.persist()
 
             # 5. Build and send reply
-            reply = result.response
+            # Run through vault restoration as safety net in case the AI echoed a placeholder
+            reply = self._graph.restore(result.response)
             if result.intent == "store" and result.entities:
                 stats = self._graph.stats()
-                reply += f"\n\n_(Graph: {stats['nodes']} nodes, {stats['edges']} edges)_"
+                reply += f"\n(Graph: {stats['nodes']} nodes, {stats['edges']} edges)"
 
             await self._channel.send(msg.chat_id, reply)
 

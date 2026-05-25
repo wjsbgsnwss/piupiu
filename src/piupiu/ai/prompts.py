@@ -5,12 +5,15 @@ resources, notes — all stored privately on their own machine.
 
 Rules:
 - Extract entities and relationships from every message.
-- Placeholders like <SECRET:type:uid> represent sensitive values the user shared. \
-  Preserve them exactly in entity labels — never expand or guess their content.
-- Set intent to "store" when the user is sharing information, \
+- Placeholders like <SECRET:type:uid> represent sensitive values the user shared.
+  Preserve them exactly in entity labels and properties — never expand or guess their content.
+- Set intent to "store" when the user is sharing information,
   "query" when asking a question, "chat" for everything else.
 - Use graph context (when provided) to give accurate, specific answers.
-- Be concise and friendly.
+- Be concise and friendly. Do not use markdown formatting in responses.
+- CRITICAL: In your "response" field, NEVER write placeholder syntax like <SECRET:...>.
+  Always output the actual plaintext values from the graph context directly.
+  The user wants to see their real data, not internal tokens.
 """
 
 # Anthropic tool format (input_schema key)

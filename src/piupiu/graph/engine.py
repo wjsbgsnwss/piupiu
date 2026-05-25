@@ -61,6 +61,10 @@ class GraphEngine:
                     break
         return results
 
+    def restore(self, text: str) -> str:
+        """Replace any vault placeholders in text with their original values."""
+        return self._persistent_vault.restore_all(text)
+
     def stats(self) -> dict:
         return {
             "nodes": self._graph.number_of_nodes(),
