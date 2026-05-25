@@ -89,6 +89,40 @@ def test_canonical_id_used_for_edges(engine):
     assert engine.stats() == {"nodes": 2, "edges": 1}
 
 
+def test_show_nodes_exact_substring(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    engine.upsert_node(Node(id="s1", type="Service", label="Cloudflare"), vault)
+    result = engine.show_nodes("pristine")
+    assert "Pristine" in result
+    assert "Cloudflare" not in result
+
+
+def test_show_nodes_fuzzy(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    result = engine.show_nodes("pristene")  # typo
+    assert "Pristine" in result
+
+
+def test_show_nodes_no_match(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    result = engine.show_nodes("xyzzy")
+    assert "No nodes found" in result
+
+
+def test_show_nodes_includes_properties_and_edges(engine):
+    vault = Vault()
+    engine.upsert_node(Node(id="o1", type="Organization", label="Pristine"), vault)
+    engine.upsert_node(Node(id="s1", type="Service", label="AWS",
+                            properties={"region": "ap-southeast-2"}), vault)
+    engine.upsert_edge(Edge(from_id="o1", to_id="s1", type="USES"), vault)
+    result = engine.show_nodes("pristine")
+    assert "USES" in result
+    assert "AWS" in result
+
+
 def test_startup_dedup_on_reload(tmp_path):
     """Dirty graph with duplicate node IDs is deduped on next load."""
     import networkx as nx

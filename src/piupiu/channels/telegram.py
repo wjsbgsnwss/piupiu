@@ -35,6 +35,7 @@ class TelegramChannel:
     async def start(self) -> None:
         await self._bot.set_my_commands([
             BotCommand(command="graph", description="Show all nodes and edges in your knowledge graph"),
+            BotCommand(command="show",  description="Look up nodes by name  e.g. /show pristine"),
             BotCommand(command="help",  description="Show node types, examples, and available commands"),
         ])
         logger.info("Telegram polling started")

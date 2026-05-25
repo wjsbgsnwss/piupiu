@@ -72,8 +72,9 @@ PiuPiu — private knowledge graph assistant
   "What is the production database password?"
 
 ── Commands ─────────────────────────────
-  /graph   show all nodes and edges
-  /help    show this message\
+  /graph         show all nodes and edges
+  /show <name>   look up nodes by name (fuzzy match)
+  /help          show this message\
 """
 
     async def handle_message(self, msg: Message) -> None:
@@ -88,6 +89,14 @@ PiuPiu — private knowledge graph assistant
 
             if cmd == "/help":
                 await self._channel.send(msg.chat_id, self._HELP_TEXT)
+                return
+
+            if cmd.startswith("/show"):
+                query = msg.text.strip()[5:].strip()
+                if not query:
+                    await self._channel.send(msg.chat_id, "Usage: /show <name>  e.g. /show pristine")
+                    return
+                await self._channel.send(msg.chat_id, self._graph.show_nodes(query))
                 return
 
             # 1. Redact sensitive data — nothing past this point contains originals

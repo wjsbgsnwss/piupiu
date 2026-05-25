@@ -102,6 +102,59 @@ class GraphEngine:
                     break
         return results
 
+    def find_nodes(self, query: str, cutoff: float = 0.55) -> list[dict]:
+        """Return nodes whose label fuzzy-matches query, sorted by relevance."""
+        from difflib import SequenceMatcher
+        q = query.strip().lower()
+        results: list[dict] = []
+        for node_id, data in self._graph.nodes(data=True):
+            label = data.get("label", "")
+            label_lower = label.lower()
+            if q in label_lower:
+                score = 1.0
+            else:
+                score = SequenceMatcher(None, q, label_lower).ratio()
+            if score < cutoff:
+                continue
+            edges = []
+            for nb in list(self._graph.successors(node_id))[:10]:
+                ed = self._graph.get_edge_data(node_id, nb) or {}
+                edges.append({"to": self._graph.nodes[nb].get("label", nb),
+                               "relation": ed.get("type", "RELATED_TO")})
+            for nb in list(self._graph.predecessors(node_id))[:10]:
+                ed = self._graph.get_edge_data(nb, node_id) or {}
+                edges.append({"from": self._graph.nodes[nb].get("label", nb),
+                               "relation": ed.get("type", "RELATED_TO")})
+            results.append({
+                "type": data.get("type", "?"),
+                "label": label,
+                "properties": {k: v for k, v in data.items() if k not in ("type", "label")},
+                "edges": edges,
+                "score": score,
+            })
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results
+
+    def show_nodes(self, query: str) -> str:
+        """Human-readable summary of nodes matching query."""
+        nodes = self.find_nodes(query)
+        if not nodes:
+            return f"No nodes found matching '{query}'."
+        lines = [f"Found {len(nodes)} node(s) matching '{query}':", ""]
+        for n in nodes:
+            props = n["properties"]
+            prop_str = (
+                f"  ({'; '.join(f'{k}: {v}' for k, v in props.items())})" if props else ""
+            )
+            lines.append(f"[{n['type']}]  {n['label']}{prop_str}")
+            for e in n["edges"]:
+                if "to" in e:
+                    lines.append(f"    ──{e['relation']}──►  {e['to']}")
+                else:
+                    lines.append(f"    {e['from']}  ──{e['relation']}──►")
+            lines.append("")
+        return "\n".join(lines).rstrip()
+
     def dump(self) -> str:
         """Return a human-readable summary of every node and edge in the graph."""
         if self._graph.number_of_nodes() == 0:
