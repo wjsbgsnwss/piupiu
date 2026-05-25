@@ -65,6 +65,23 @@ async def test_natural_language_password_with_quotes():
 
 
 @pytest.mark.asyncio
+async def test_natural_language_password_with_embedded_quote():
+    """Password containing a single quote must not be truncated at the embedded quote."""
+    layer = RegexLayer()
+    vault = Vault()
+    # The full password is lksdfj'asf@lksdjf# — the outer quotes are delimiters
+    text = "the password is 'lksdfj'asf@lksdjf#'"
+    redacted = await layer.redact(text, vault)
+    # The full password must be gone, not just the part before the embedded quote
+    assert "lksdfj'asf@lksdjf#" not in redacted
+    assert "lksdfj" not in redacted
+    # And it must be in the vault as the complete value
+    uid = next(iter(vault._store))
+    _, original = vault._store[uid]
+    assert original == "lksdfj'asf@lksdjf#"
+
+
+@pytest.mark.asyncio
 async def test_env_assignment_still_works():
     layer = RegexLayer()
     vault = Vault()
