@@ -17,19 +17,19 @@ Before any message reaches the AI, it passes through a **4-layer privacy shield*
 ```
 You: "My AWS key is AKIAIOSFODNN7EXAMPLE, use it for the prod bucket"
 
-  ┌─────────────────────────────────┐
-  │       Privacy Shield            │
-  │  AKIAIOSFODNN7EXAMPLE  ──────►  <SECRET:aws_key:a3f9>   (stored locally)
-  └────────────────────────────��────┘
-                │
-                ▼  (redacted text only)
-          Claude API
-                │
-                ▼
-  ┌──────────��──────────────────────┐
-  │     Encrypted Graph DB          │
-  │  Credential ──► prod bucket     │  (original restored before storage)
-  └─────────��───────────────��───────┘
+  ┌──────────────────────────────────────────────────┐
+  │                 Privacy Shield                    │
+  │  AKIAIOSFODNN7EXAMPLE  ──►  <SECRET:aws_key:a3f9> │  (stored locally)
+  └──────────────────────────┬───────────────────────┘
+                             │  redacted text only
+                             ▼
+                        Claude API
+                             │  structured JSON
+                             ▼
+  ┌──────────────────────────────────────────────────┐
+  │             Encrypted Graph DB                    │
+  │  Credential ──► prod bucket                       │  (original restored)
+  └──────────────────────────────────────────────────┘
 ```
 
 Later: *"What's my AWS key?"* → PiuPiu queries the local graph and tells you.
@@ -58,7 +58,16 @@ cd piupiu
 pip install -e .
 ```
 
-### 2. Configure
+### 2. Download the spacy model (required for PII detection)
+
+```bash
+python3 -m spacy download en_core_web_sm
+```
+
+> This is a one-time step. Without it, the Presidio PII layer is skipped
+> and names, emails, and phone numbers will not be redacted.
+
+### 3. Configure
 
 ```bash
 cp .env.example .env
@@ -71,7 +80,7 @@ PIUPIU_PASSPHRASE=a-strong-passphrase-you-will-remember
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 3. Run (CLI mode)
+### 4. Run (CLI mode)
 
 ```bash
 python3 -m piupiu
@@ -135,6 +144,8 @@ TELEGRAM_BOT_TOKEN=your-token-here
 | **Ollama** | Contextual secrets pattern-matching misses (e.g. *"my password is my cat's name"*) | Ollama running locally |
 
 ### Enable Presidio PII detection
+
+Already covered in Quick Start step 2. If you skipped it:
 
 ```bash
 python3 -m spacy download en_core_web_sm
