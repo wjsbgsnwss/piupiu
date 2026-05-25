@@ -1,7 +1,7 @@
 from __future__ import annotations
 import logging
 
-from .ai.claude_provider import ClaudeProvider
+from .ai.base import AIProvider
 from .channels.base import Message
 from .config import Settings
 from .graph.engine import GraphEngine
@@ -20,8 +20,16 @@ class Agent:
         self._shield = PrivacyShield.from_config(cfg)
         storage = GraphStorage(cfg.data_dir, cfg.passphrase)
         self._graph = GraphEngine(storage)
-        self._ai = ClaudeProvider(cfg.anthropic_api_key, cfg.ai_model)
+        self._ai = self._build_ai_provider(cfg)
         self._channel = self._build_channel()
+
+    @staticmethod
+    def _build_ai_provider(cfg: Settings):
+        if cfg.ai_provider == "nim":
+            from .ai.nim_provider import NIMProvider
+            return NIMProvider(cfg.nim_api_key, cfg.nim_model, cfg.nim_base_url)
+        from .ai.claude_provider import ClaudeProvider
+        return ClaudeProvider(cfg.anthropic_api_key, cfg.ai_model)
 
     def _build_channel(self):
         if self._cfg.channel == "telegram":

@@ -14,8 +14,14 @@ class Settings(BaseSettings):
     data_dir: Path = Field(Path(".piupiu"), validation_alias="PIUPIU_DATA_DIR")
     channel: str = Field("cli", validation_alias="PIUPIU_CHANNEL")
 
+    ai_provider: str = Field("anthropic", validation_alias="PIUPIU_AI_PROVIDER")
+
     anthropic_api_key: str = Field("", validation_alias="ANTHROPIC_API_KEY")
     ai_model: str = Field("claude-sonnet-4-6", validation_alias="PIUPIU_AI_MODEL")
+
+    nim_api_key: str = Field("", validation_alias="NIM_API_KEY")
+    nim_model: str = Field("meta/llama-3.1-70b-instruct", validation_alias="PIUPIU_NIM_MODEL")
+    nim_base_url: str = Field("https://integrate.api.nvidia.com/v1", validation_alias="PIUPIU_NIM_BASE_URL")
 
     telegram_bot_token: str = Field("", validation_alias="TELEGRAM_BOT_TOKEN")
 

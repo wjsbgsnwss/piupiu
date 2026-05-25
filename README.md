@@ -90,6 +90,27 @@ PiuPiu: Your GitHub token for wjsbgsnwss is ghp_abc123xyz.
 
 ---
 
+## Using NVIDIA NIM
+
+Get a free API key at [build.nvidia.com](https://build.nvidia.com), then:
+
+```env
+PIUPIU_AI_PROVIDER=nim
+NIM_API_KEY=nvapi-...
+PIUPIU_NIM_MODEL=meta/llama-3.1-70b-instruct
+```
+
+Supported NIM models with tool use:
+
+| Model | Size | Notes |
+|---|---|---|
+| `meta/llama-3.1-70b-instruct` | 70B | Recommended — strong tool use |
+| `meta/llama-3.3-70b-instruct` | 70B | Latest Llama 3.3 |
+| `nvidia/llama-3.1-nemotron-70b-instruct` | 70B | NVIDIA-tuned |
+| `mistralai/mixtral-8x22b-instruct-v0.1` | 141B | High quality |
+
+---
+
 ## Telegram Setup
 
 1. Message [@BotFather](https://t.me/BotFather) → `/newbot` → copy your token
@@ -152,11 +173,19 @@ When you ask a question, PiuPiu finds the relevant subgraph and gives it to the 
 | Variable | Default | Description |
 |---|---|---|
 | `PIUPIU_PASSPHRASE` | *(required)* | Master key for graph encryption |
-| `ANTHROPIC_API_KEY` | *(required)* | Anthropic Claude API key |
 | `PIUPIU_CHANNEL` | `cli` | `cli` or `telegram` |
 | `PIUPIU_DATA_DIR` | `.piupiu` | Directory for encrypted data files |
+| `PIUPIU_AI_PROVIDER` | `anthropic` | `anthropic` or `nim` |
+| **Anthropic** | | |
+| `ANTHROPIC_API_KEY` | — | Required when provider is `anthropic` |
 | `PIUPIU_AI_MODEL` | `claude-sonnet-4-6` | Claude model to use |
+| **NVIDIA NIM** | | |
+| `NIM_API_KEY` | — | Required when provider is `nim` |
+| `PIUPIU_NIM_MODEL` | `meta/llama-3.1-70b-instruct` | NIM model to use |
+| `PIUPIU_NIM_BASE_URL` | `https://integrate.api.nvidia.com/v1` | NIM API endpoint |
+| **Telegram** | | |
 | `TELEGRAM_BOT_TOKEN` | — | Required when channel is `telegram` |
+| **Ollama privacy layer** | | |
 | `PIUPIU_OLLAMA_ENABLED` | `false` | Enable Ollama privacy layer |
 | `PIUPIU_OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama API endpoint |
 | `PIUPIU_OLLAMA_MODEL` | `qwen2.5:3b` | Model for privacy checking |

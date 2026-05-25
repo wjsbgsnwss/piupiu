@@ -13,6 +13,7 @@ Rules:
 - Be concise and friendly.
 """
 
+# Anthropic tool format (input_schema key)
 PROCESS_TOOL = {
     "name": "process_message",
     "description": "Extract knowledge from the message and produce a response.",
@@ -61,5 +62,16 @@ PROCESS_TOOL = {
             },
         },
         "required": ["entities", "relationships", "intent", "response"],
+    },
+}
+
+# OpenAI-compatible tool format (used by NIM and other OpenAI-compatible providers)
+_SCHEMA = PROCESS_TOOL["input_schema"]  # reuse the same schema
+PROCESS_TOOL_OPENAI = {
+    "type": "function",
+    "function": {
+        "name": PROCESS_TOOL["name"],
+        "description": PROCESS_TOOL["description"],
+        "parameters": _SCHEMA,
     },
 }
