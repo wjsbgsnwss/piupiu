@@ -3,7 +3,7 @@ import json
 import logging
 import httpx
 from ._context import format_context
-from .base import AIProvider, Entity, ExtractionResult, Relationship
+from .base import AIProvider, ExtractionResult, parse_extraction
 from .prompts import SYSTEM_PROMPT, PROCESS_TOOL_OPENAI
 
 logger = logging.getLogger(__name__)
@@ -64,13 +64,7 @@ class NIMProvider:
         tool_calls = choice.get("tool_calls") or []
         for call in tool_calls:
             if call.get("function", {}).get("name") == "process_message":
-                d = json.loads(call["function"]["arguments"])
-                return ExtractionResult(
-                    entities=[Entity(**e) for e in d.get("entities", [])],
-                    relationships=[Relationship(**r) for r in d.get("relationships", [])],
-                    intent=d.get("intent", "chat"),
-                    response=d.get("response", ""),
-                )
+                return parse_extraction(json.loads(call["function"]["arguments"]))
 
         # Fallback: plain text response (model skipped tool use)
         text = choice.get("content") or ""

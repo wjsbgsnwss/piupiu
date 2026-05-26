@@ -4,7 +4,7 @@ import logging
 import anthropic
 
 from ._context import format_context
-from .base import AIProvider, Entity, ExtractionResult, Relationship
+from .base import AIProvider, ExtractionResult, parse_extraction
 from .prompts import PROCESS_TOOL, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -39,13 +39,7 @@ class ClaudeProvider:
 
         for block in response.content:
             if block.type == "tool_use" and block.name == "process_message":
-                d = block.input
-                return ExtractionResult(
-                    entities=[Entity(**e) for e in d.get("entities", [])],
-                    relationships=[Relationship(**r) for r in d.get("relationships", [])],
-                    intent=d.get("intent", "chat"),
-                    response=d.get("response", ""),
-                )
+                return parse_extraction(block.input)
 
         # Fallback: model replied in plain text without using the tool
         text = next((b.text for b in response.content if hasattr(b, "text")), "")
