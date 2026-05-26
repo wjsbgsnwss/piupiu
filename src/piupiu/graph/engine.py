@@ -39,7 +39,10 @@ class GraphEngine:
     def upsert_node(self, node: Node, session_vault: Vault) -> str:
         """Merge node into the graph under its canonical ID; return that ID."""
         label = self._restore(node.label, session_vault)
-        props = {k: self._restore(str(v), session_vault) for k, v in node.properties.items()}
+        # Exclude 'type' and 'label' — they are stored as explicit node attributes
+        # and would cause "multiple values for keyword argument" if also in properties.
+        props = {k: self._restore(str(v), session_vault)
+                 for k, v in node.properties.items() if k not in ("type", "label")}
         canonical = self._canonical_id(node.type, label)
 
         if self._graph.has_node(canonical):
