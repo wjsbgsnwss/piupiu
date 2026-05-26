@@ -26,6 +26,7 @@ _HTML = """<!DOCTYPE html>
     display: flex; align-items: center; gap: 10px;
     padding: 8px 16px; background: #1E293B;
     border-bottom: 1px solid #334155; flex-shrink: 0;
+    position: relative; z-index: 10;
   }
   #logo { font-weight: 700; font-size: 16px; color: #818CF8; }
   #logo span { color: #475569; font-weight: 400; font-size: 13px; }
@@ -44,8 +45,8 @@ _HTML = """<!DOCTYPE html>
   #refresh:hover { background: #1D4ED8; color: #fff; }
   #stats { color: #475569; font-size: 12px; margin-left: auto; white-space: nowrap; }
 
-  #main { display: flex; flex: 1; overflow: hidden; position: relative; }
-  #cy { flex: 1; }
+  #main { display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0; }
+  #cy { flex: 1; min-width: 0; }
 
   #empty-msg {
     position: absolute; inset: 0; display: none;
@@ -103,6 +104,7 @@ _HTML = """<!DOCTYPE html>
     display: flex; gap: 12px; padding: 6px 16px;
     background: #1E293B; border-top: 1px solid #334155;
     flex-shrink: 0; flex-wrap: wrap;
+    position: relative; z-index: 10;
   }
   .leg { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #64748B; }
   .dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -206,6 +208,7 @@ function buildCy(data) {
     minZoom: 0.15, maxZoom: 5,
   });
 
+  cy.resize();
   cy.on('tap', 'node', e => { try { openPanel(e.target); } catch(err) { console.error('openPanel:', err); } });
   cy.on('tap', e => { if (e.target === cy) { closePanel(); clearDim(); } });
 
@@ -301,7 +304,9 @@ document.getElementById('del-btn').addEventListener('click', async () => {
   }
 });
 
-loadGraph();
+// Defer until after the browser has applied the flex layout and painted,
+// so Cytoscape reads correct container dimensions on first init.
+requestAnimationFrame(() => requestAnimationFrame(loadGraph));
 </script>
 </body>
 </html>"""
