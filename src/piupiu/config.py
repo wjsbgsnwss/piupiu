@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     web_host: str = Field("127.0.0.1", validation_alias="PIUPIU_WEB_HOST")
     web_port: int = Field(8080, validation_alias="PIUPIU_WEB_PORT")
 
+    confirm_timeout: int = Field(10, validation_alias="PIUPIU_CONFIRM_TIMEOUT")
+
 
 _settings: Settings | None = None
 

@@ -9,6 +9,7 @@ from .graph.engine import GraphEngine
 from .graph.schema import Edge, Node
 from .graph.storage import GraphStorage
 from .privacy.shield import PrivacyShield
+from .privacy.vault import Vault
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,15 @@ PiuPiu — private knowledge graph assistant
 
             # 4. Persist extracted knowledge (originals restored from vault before storage)
             if result.intent in ("store", "query") and result.entities:
+                if result.intent == "store" and self._cfg.confirm_timeout > 0:
+                    confirm_msg = self._format_confirmation(result, vault, context)
+                    accepted = await self._channel.confirm(
+                        msg.chat_id, confirm_msg, self._cfg.confirm_timeout
+                    )
+                    if not accepted:
+                        logger.debug("── Storage rejected by user ─────────────────────")
+                        await self._channel.send(msg.chat_id, "Nothing stored.")
+                        return
                 for entity in result.entities:
                     self._graph.upsert_node(
                         Node(id=entity.id, type=entity.type,
@@ -160,6 +170,46 @@ PiuPiu — private knowledge graph assistant
         except Exception:
             logger.exception("Error handling message from %s", msg.sender_id)
             await self._channel.send(msg.chat_id, "Something went wrong — please try again.")
+
+    def _format_confirmation(self, result, vault: Vault, context: list[dict]) -> str:
+        def restore(text: str) -> str:
+            return self._graph.restore(vault.restore_all(str(text)))
+
+        n_nodes = len(result.entities)
+        n_edges = len(result.relationships)
+        lines = [
+            f"Store {n_nodes} node(s)"
+            + (f" and {n_edges} edge(s)" if n_edges else "")
+            + "?",
+            "",
+        ]
+        for ent in result.entities:
+            label = restore(ent.label)
+            props = {k: restore(v) for k, v in (ent.properties or {}).items() if v}
+            lines.append(f"[{ent.type}]  {label}")
+            for k, v in props.items():
+                lines.append(f"  {k}: {v}")
+            lines.append("")
+
+        if result.relationships:
+            id_to_label = {e.id: restore(e.label) for e in result.entities}
+            lines.append("Edges:")
+            for rel in result.relationships:
+                fl = id_to_label.get(rel.from_id, rel.from_id)
+                tl = id_to_label.get(rel.to_id, rel.to_id)
+                lines.append(f"  {fl}  ──{rel.type}──►  {tl}")
+            lines.append("")
+
+        if context:
+            lines.append("Related existing nodes:")
+            for n in context:
+                props = {k: v for k, v in (n.get("properties") or {}).items() if v}
+                prop_str = (
+                    f"  ({'; '.join(f'{k}: {v}' for k, v in props.items())})" if props else ""
+                )
+                lines.append(f"  [{n['type']}]  {n['label']}{prop_str}")
+
+        return "\n".join(lines).rstrip()
 
     async def run(self) -> None:
         logger.info("PiuPiu starting on channel: %s", self._cfg.channel)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import select
 import sys
 from .base import Message, MessageHandler
 
@@ -37,3 +38,20 @@ class CLIChannel:
 
     async def send(self, chat_id: str, text: str) -> None:
         print(f"\nPiuPiu: {text}\n")
+
+    async def confirm(self, chat_id: str, message: str, timeout: int) -> bool:
+        print(f"\n{message}")
+        print(f"\nAccept? [Y/n] (auto-accepts in {timeout}s): ", end="", flush=True)
+        deadline = asyncio.get_event_loop().time() + timeout
+        while True:
+            remaining = deadline - asyncio.get_event_loop().time()
+            if remaining <= 0:
+                print("\nAuto-accepted.")
+                return True
+            ready, _, _ = select.select([sys.stdin], [], [], min(remaining, 0.1))
+            if ready:
+                response = sys.stdin.readline().strip().lower()
+                accepted = response not in ("n", "no", "reject")
+                print("Accepted." if accepted else "Rejected.")
+                return accepted
+            await asyncio.sleep(0.05)

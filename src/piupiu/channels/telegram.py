@@ -1,7 +1,13 @@
 from __future__ import annotations
+import asyncio
 import logging
-from aiogram import Bot, Dispatcher, Router
-from aiogram.types import BotCommand, Message as TGMessage
+import uuid
+from aiogram import Bot, Dispatcher, F, Router
+from aiogram.types import (
+    BotCommand, CallbackQuery,
+    InlineKeyboardButton, InlineKeyboardMarkup,
+    Message as TGMessage,
+)
 from .base import Message, MessageHandler
 
 logger = logging.getLogger(__name__)
@@ -15,10 +21,21 @@ class TelegramChannel:
         self._dp = Dispatcher()
         self._router = Router()
         self._on_message = on_message
+        self._pending_confirms: dict[str, asyncio.Future] = {}
         self._register_handlers()
         self._dp.include_router(self._router)
 
     def _register_handlers(self) -> None:
+        @self._router.callback_query(F.data.startswith("confirm:"))
+        async def handle_confirm_callback(cb: CallbackQuery) -> None:
+            parts = (cb.data or "").split(":", 2)
+            if len(parts) == 3:
+                _, action, cid = parts
+                fut = self._pending_confirms.get(cid)
+                if fut and not fut.done():
+                    fut.set_result(action == "accept")
+            await cb.answer()
+
         @self._router.message()
         async def handle(tg_msg: TGMessage) -> None:
             if not tg_msg.text:
@@ -48,3 +65,29 @@ class TelegramChannel:
 
     async def send(self, chat_id: str, text: str) -> None:
         await self._bot.send_message(chat_id=int(chat_id), text=text)
+
+    async def confirm(self, chat_id: str, message: str, timeout: int) -> bool:
+        cid = uuid.uuid4().hex[:8]
+        fut: asyncio.Future[bool] = asyncio.get_event_loop().create_future()
+        self._pending_confirms[cid] = fut
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="✓ Accept", callback_data=f"confirm:accept:{cid}"),
+            InlineKeyboardButton(text="✗ Reject", callback_data=f"confirm:reject:{cid}"),
+        ]])
+        sent = await self._bot.send_message(
+            chat_id=int(chat_id),
+            text=f"{message}\n\nAuto-accepts in {timeout}s.",
+            reply_markup=keyboard,
+        )
+        try:
+            accepted = await asyncio.wait_for(asyncio.shield(fut), timeout=timeout)
+            label = "Stored." if accepted else "Cancelled."
+        except asyncio.TimeoutError:
+            accepted = True
+            label = "Auto-stored (no response)."
+        finally:
+            self._pending_confirms.pop(cid, None)
+
+        await sent.edit_text(f"{message}\n\n{label}", reply_markup=None)
+        return accepted
