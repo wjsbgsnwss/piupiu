@@ -206,7 +206,7 @@ function buildCy(data) {
     minZoom: 0.15, maxZoom: 5,
   });
 
-  cy.on('tap', 'node', e => openPanel(e.target));
+  cy.on('tap', 'node', e => { try { openPanel(e.target); } catch(err) { console.error('openPanel:', err); } });
   cy.on('tap', e => { if (e.target === cy) { closePanel(); clearDim(); } });
 
   const empty = document.getElementById('empty-msg');
@@ -239,10 +239,10 @@ function openPanel(node) {
   if (out.length || inc.length) {
     html = '<div class="sec">Relationships</div>';
     out.forEach(e => {
-      html += `<div class="rel">→ <span class="rel-type">${e.data('label')}</span> ${escHtml(e.target().data('label'))}</div>`;
+      html += `<div class="rel">→ <span class="rel-type">${escHtml(e.data('label'))}</span> ${escHtml(e.target().data('label') || e.target().id())}</div>`;
     });
     inc.forEach(e => {
-      html += `<div class="rel">← <span class="rel-type">${e.data('label')}</span> ${escHtml(e.source().data('label'))}</div>`;
+      html += `<div class="rel">← <span class="rel-type">${escHtml(e.data('label'))}</span> ${escHtml(e.source().data('label') || e.source().id())}</div>`;
     });
   }
   document.getElementById('panel-rels').innerHTML = html;
@@ -257,7 +257,8 @@ function closePanel() {
 function clearDim() { if (cy) cy.elements().removeClass('dim'); }
 
 function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 async function loadGraph() {
@@ -352,6 +353,10 @@ async def run_web(engine: GraphEngine, host: str, port: int) -> None:
     except ImportError:
         raise RuntimeError("Web UI requires: pip install 'piupiu[web]'")
 
+    class _Server(uvicorn.Server):
+        def install_signal_handlers(self) -> None:
+            pass  # let asyncio handle SIGINT so Ctrl+C works normally
+
     config = uvicorn.Config(
         app=create_app(engine),
         host=host,
@@ -359,5 +364,4 @@ async def run_web(engine: GraphEngine, host: str, port: int) -> None:
         log_level="error",
         access_log=False,
     )
-    server = uvicorn.Server(config)
-    await server.serve()
+    await _Server(config).serve()
