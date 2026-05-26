@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     ollama_model: str = Field("qwen2.5:3b", validation_alias="PIUPIU_OLLAMA_MODEL")
     ollama_timeout: int = Field(30, validation_alias="PIUPIU_OLLAMA_TIMEOUT")
 
+    web_enabled: bool = Field(False, validation_alias="PIUPIU_WEB_ENABLED")
+    web_host: str = Field("127.0.0.1", validation_alias="PIUPIU_WEB_HOST")
+    web_port: int = Field(8080, validation_alias="PIUPIU_WEB_PORT")
+
 
 _settings: Settings | None = None
 

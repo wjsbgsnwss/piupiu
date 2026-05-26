@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 import logging
 
 from .ai.base import AIProvider
@@ -163,8 +164,13 @@ PiuPiu — private knowledge graph assistant
     async def run(self) -> None:
         logger.info("PiuPiu starting on channel: %s", self._cfg.channel)
         logger.info("Graph: %s", self._graph.stats())
+        coros = [self._channel.start()]
+        if self._cfg.web_enabled:
+            from .web.server import run_web
+            logger.info("Web UI: http://%s:%d", self._cfg.web_host, self._cfg.web_port)
+            coros.append(run_web(self._graph, self._cfg.web_host, self._cfg.web_port))
         try:
-            await self._channel.start()
+            await asyncio.gather(*coros)
         finally:
             self._graph.persist()
             logger.info("Graph persisted. Goodbye!")
