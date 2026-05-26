@@ -23,30 +23,35 @@ _HTML = """<!DOCTYPE html>
     height: 100vh; display: flex; flex-direction: column; overflow: hidden;
   }
   #toolbar {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 8px;
     padding: 8px 16px; background: #1E293B;
     border-bottom: 1px solid #334155; flex-shrink: 0;
     position: relative; z-index: 10;
   }
-  #logo { font-weight: 700; font-size: 16px; color: #818CF8; }
+  #logo { font-weight: 700; font-size: 16px; color: #818CF8; white-space: nowrap; }
   #logo span { color: #475569; font-weight: 400; font-size: 13px; }
   #search {
-    flex: 1; max-width: 240px; padding: 5px 10px;
+    flex: 1; max-width: 220px; padding: 5px 10px;
     background: #0F172A; border: 1px solid #334155; border-radius: 6px;
     color: #E2E8F0; font-size: 13px; outline: none;
   }
   #search:focus { border-color: #6366F1; }
   #search::placeholder { color: #475569; }
-  #refresh {
-    padding: 5px 12px; background: #1D3461; color: #93C5FD;
-    border: none; border-radius: 6px; cursor: pointer;
-    font-size: 13px; font-weight: 500;
+  .tb-btn {
+    padding: 5px 11px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500; white-space: nowrap;
   }
-  #refresh:hover { background: #1D4ED8; color: #fff; }
-  #stats { color: #475569; font-size: 12px; margin-left: auto; white-space: nowrap; }
+  #back-btn   { background: #1E3A5F; color: #93C5FD; display: none; }
+  #back-btn:hover { background: #1D4ED8; color: #fff; }
+  #refresh    { background: #1E3A5F; color: #93C5FD; }
+  #refresh:hover  { background: #1D4ED8; color: #fff; }
+  .zoom-btn   { background: #1E293B; color: #94A3B8; border: 1px solid #334155; padding: 4px 10px; }
+  .zoom-btn:hover { background: #334155; color: #E2E8F0; }
+  #zoom-sep   { width: 1px; background: #334155; height: 20px; margin: 0 2px; }
+  #stats      { color: #475569; font-size: 12px; margin-left: auto; white-space: nowrap; }
 
   #main { display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0; }
-  #cy { flex: 1; min-width: 0; }
+  #cy   { flex: 1; min-width: 0; }
 
   #empty-msg {
     position: absolute; inset: 0; display: none;
@@ -54,7 +59,7 @@ _HTML = """<!DOCTYPE html>
     color: #334155; pointer-events: none;
   }
   #empty-msg h2 { font-size: 20px; margin-bottom: 6px; }
-  #empty-msg p { font-size: 13px; }
+  #empty-msg p  { font-size: 13px; }
 
   #panel {
     width: 0; overflow: hidden;
@@ -71,8 +76,7 @@ _HTML = """<!DOCTYPE html>
   #panel-title { font-size: 15px; font-weight: 600; color: #F1F5F9; word-break: break-word; line-height: 1.3; }
   #panel-close {
     background: none; border: none; color: #475569;
-    font-size: 16px; cursor: pointer; padding: 0 0 0 8px;
-    line-height: 1; flex-shrink: 0;
+    font-size: 16px; cursor: pointer; padding: 0 0 0 8px; line-height: 1; flex-shrink: 0;
   }
   #panel-close:hover { color: #E2E8F0; }
   #panel-badge {
@@ -88,9 +92,8 @@ _HTML = """<!DOCTYPE html>
   .prop-v { color: #CBD5E1; word-break: break-all; }
   .rel { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px; color: #94A3B8; }
   .rel-type {
-    font-family: monospace; font-size: 10px;
-    background: #0F172A; color: #64748B;
-    padding: 1px 4px; border-radius: 3px;
+    font-family: monospace; font-size: 10px; background: #0F172A;
+    color: #64748B; padding: 1px 4px; border-radius: 3px;
   }
   #del-btn {
     margin-top: 16px; width: 100%; padding: 7px;
@@ -103,8 +106,7 @@ _HTML = """<!DOCTYPE html>
   #legend {
     display: flex; gap: 12px; padding: 6px 16px;
     background: #1E293B; border-top: 1px solid #334155;
-    flex-shrink: 0; flex-wrap: wrap;
-    position: relative; z-index: 10;
+    flex-shrink: 0; flex-wrap: wrap; position: relative; z-index: 10;
   }
   .leg { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #64748B; }
   .dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -115,7 +117,12 @@ _HTML = """<!DOCTYPE html>
 <div id="toolbar">
   <span id="logo">PiuPiu <span>graph</span></span>
   <input id="search" placeholder="Search nodes…" autocomplete="off" spellcheck="false">
-  <button id="refresh">↺ Refresh</button>
+  <button id="back-btn"  class="tb-btn">← Back</button>
+  <button id="refresh"   class="tb-btn">↺ Refresh</button>
+  <div id="zoom-sep"></div>
+  <button id="zoom-in"  class="tb-btn zoom-btn">+</button>
+  <button id="zoom-out" class="tb-btn zoom-btn">−</button>
+  <button id="zoom-fit" class="tb-btn zoom-btn">⊡ Fit</button>
   <span id="stats"></span>
 </div>
 
@@ -144,12 +151,13 @@ _HTML = """<!DOCTYPE html>
 
 <script>
 const COLORS = {
-  Organization: '#6366F1', Person:   '#10B981',
+  Organization: '#6366F1', Person:     '#10B981',
   Service:      '#F59E0B', Credential: '#EF4444',
   Resource:     '#8B5CF6', Concept:    '#06B6D4',
   Event:        '#EC4899', Location:   '#84CC16',
 };
 const color = t => COLORS[t] || '#64748B';
+const MAX_INIT_ZOOM = 1.5;
 
 // Build legend
 const legendEl = document.getElementById('legend');
@@ -159,6 +167,10 @@ Object.entries(COLORS).forEach(([t, c]) => {
 });
 
 let cy, selected;
+let tapTimer   = null;   // disambiguates single vs double tap
+let prevIds    = null;   // element IDs saved before entering neighbourhood view
+
+// ── Cytoscape init ────────────────────────────────────────────────────────────
 
 function buildCy(data) {
   const els = [
@@ -187,7 +199,6 @@ function buildCy(data) {
         },
       },
       { selector: 'node:selected', style: { 'border-color': '#F8FAFC', 'border-width': 3 } },
-      { selector: '.dim', style: { opacity: 0.15 } },
       {
         selector: 'edge',
         style: {
@@ -199,28 +210,97 @@ function buildCy(data) {
           'text-background-padding': '2px',
         },
       },
-      { selector: 'edge.dim', style: { opacity: 0.05 } },
     ],
     layout: {
-      name: 'cose', animate: false,
+      name: 'cose', animate: false, fit: false,
       nodeRepulsion: 10000, idealEdgeLength: 140, gravity: 0.8, randomize: true,
     },
-    minZoom: 0.15, maxZoom: 5,
+    minZoom: 0.1, maxZoom: 4,
   });
 
   cy.resize();
-  cy.on('tap', 'node', e => { try { openPanel(e.target); } catch(err) { console.error('openPanel:', err); } });
-  cy.on('tap', e => { if (e.target === cy) { closePanel(); clearDim(); } });
+  // Fit then cap zoom so nodes aren't blown up when graph is small
+  cy.fit(undefined, 50);
+  if (cy.zoom() > MAX_INIT_ZOOM) { cy.zoom(MAX_INIT_ZOOM); cy.center(); }
 
-  const empty = document.getElementById('empty-msg');
-  empty.style.display = data.nodes.length ? 'none' : 'flex';
+  // Single tap — delayed to avoid firing on double-tap
+  cy.on('tap', 'node', e => {
+    if (tapTimer) return;
+    const node = e.target;
+    tapTimer = setTimeout(() => { tapTimer = null; try { openPanel(node); } catch(err) { console.error(err); } }, 220);
+  });
+  // Double tap — enter neighbourhood view
+  cy.on('dbltap', 'node', e => {
+    clearTimeout(tapTimer); tapTimer = null;
+    closePanel();
+    enterNeighbourhood(e.target);
+  });
+  cy.on('tap', e => { if (e.target === cy) closePanel(); });
+
+  document.getElementById('empty-msg').style.display = data.nodes.length ? 'none' : 'flex';
 }
+
+// ── View helpers ──────────────────────────────────────────────────────────────
+
+function visibleIds() {
+  return cy.elements(':visible').map(el => el.id());
+}
+
+function showIds(ids) {
+  cy.elements().hide();
+  ids.forEach(id => { const el = cy.getElementById(id); if (el.length) el.show(); });
+}
+
+function fitVisible() {
+  const vis = cy.elements(':visible');
+  if (vis.length) cy.fit(vis, 50);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+
+let searchTimer;
+document.getElementById('search').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!cy) return;
+    // Leaving neighbourhood mode resets history
+    prevIds = null;
+    document.getElementById('back-btn').style.display = 'none';
+    closePanel();
+    if (!q) { cy.elements().show(); fitVisible(); return; }
+
+    const matched = cy.nodes().filter(n => n.data('label').toLowerCase().includes(q));
+    const edges   = cy.edges().filter(e => matched.has(e.source()) && matched.has(e.target()));
+    cy.elements().hide();
+    matched.show();
+    edges.show();
+    fitVisible();
+  }, 200);
+});
+
+// ── Neighbourhood view ────────────────────────────────────────────────────────
+
+function enterNeighbourhood(node) {
+  prevIds = visibleIds();
+  const hood = node.closedNeighborhood();
+  cy.elements().hide();
+  hood.show();
+  cy.fit(hood, 50);
+  document.getElementById('back-btn').style.display = 'inline-block';
+}
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  closePanel();
+  if (prevIds) { showIds(prevIds); fitVisible(); prevIds = null; }
+  else { cy.elements().show(); fitVisible(); }
+  document.getElementById('back-btn').style.display = 'none';
+});
+
+// ── Detail panel ──────────────────────────────────────────────────────────────
 
 function openPanel(node) {
   selected = node;
-  clearDim();
-  cy.elements().not(node.closedNeighborhood()).addClass('dim');
-
   document.getElementById('panel-title').textContent = node.data('label');
   const badge = document.getElementById('panel-badge');
   const t = node.data('type');
@@ -229,10 +309,10 @@ function openPanel(node) {
   badge.style.color = color(t);
 
   const props = node.data('props') || {};
-  const keys = Object.keys(props).filter(k => props[k]);
+  const keys  = Object.keys(props).filter(k => props[k]);
   document.getElementById('panel-props').innerHTML = keys.length
     ? '<div class="sec">Properties</div>' + keys.map(k =>
-        `<div class="prop"><span class="prop-k">${k}</span><span class="prop-v">${escHtml(String(props[k]))}</span></div>`
+        `<div class="prop"><span class="prop-k">${k}</span><span class="prop-v">${esc(String(props[k]))}</span></div>`
       ).join('')
     : '';
 
@@ -241,12 +321,8 @@ function openPanel(node) {
   let html = '';
   if (out.length || inc.length) {
     html = '<div class="sec">Relationships</div>';
-    out.forEach(e => {
-      html += `<div class="rel">→ <span class="rel-type">${escHtml(e.data('label'))}</span> ${escHtml(e.target().data('label') || e.target().id())}</div>`;
-    });
-    inc.forEach(e => {
-      html += `<div class="rel">← <span class="rel-type">${escHtml(e.data('label'))}</span> ${escHtml(e.source().data('label') || e.source().id())}</div>`;
-    });
+    out.forEach(e => { html += `<div class="rel">→ <span class="rel-type">${esc(e.data('label'))}</span> ${esc(e.target().data('label') || e.target().id())}</div>`; });
+    inc.forEach(e => { html += `<div class="rel">← <span class="rel-type">${esc(e.data('label'))}</span> ${esc(e.source().data('label') || e.source().id())}</div>`; });
   }
   document.getElementById('panel-rels').innerHTML = html;
   document.getElementById('panel').classList.add('open');
@@ -257,55 +333,54 @@ function closePanel() {
   document.getElementById('panel').classList.remove('open');
 }
 
-function clearDim() { if (cy) cy.elements().removeClass('dim'); }
+document.getElementById('panel-close').addEventListener('click', closePanel);
 
-function escHtml(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+// ── Zoom controls ─────────────────────────────────────────────────────────────
 
-async function loadGraph() {
-  const r = await fetch('/api/graph');
-  const data = await r.json();
-  document.getElementById('stats').textContent =
-    `${data.nodes.length} nodes · ${data.edges.length} edges`;
-  buildCy(data);
-  closePanel();
-}
-
-// Search — highlight matching nodes and their neighbours
-let searchTimer;
-document.getElementById('search').addEventListener('input', e => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
-    const q = e.target.value.trim().toLowerCase();
-    if (!cy) return;
-    clearDim(); closePanel();
-    if (!q) return;
-    const matched = cy.nodes().filter(n => n.data('label').toLowerCase().includes(q));
-    cy.elements().not(matched.closedNeighborhood()).addClass('dim');
-  }, 180);
+document.getElementById('zoom-in').addEventListener('click', () => {
+  cy.zoom({ level: cy.zoom() * 1.25, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
+});
+document.getElementById('zoom-out').addEventListener('click', () => {
+  cy.zoom({ level: cy.zoom() / 1.25, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
+});
+document.getElementById('zoom-fit').addEventListener('click', () => {
+  const vis = cy.elements(':visible');
+  cy.fit(vis.length ? vis : cy.elements(), 50);
 });
 
-document.getElementById('refresh').addEventListener('click', loadGraph);
-document.getElementById('panel-close').addEventListener('click', () => { closePanel(); clearDim(); });
+// ── Delete ────────────────────────────────────────────────────────────────────
 
 document.getElementById('del-btn').addEventListener('click', async () => {
   if (!selected) return;
   const label = selected.data('label');
   if (!confirm(`Delete "${label}" and all its edges?`)) return;
-  const nodeId = selected.id();
-  const r = await fetch('/api/nodes/' + encodeURIComponent(nodeId), { method: 'DELETE' });
-  if (r.ok) {
-    loadGraph();
-  } else {
-    const d = await r.json().catch(() => ({}));
-    alert(d.detail || 'Delete failed');
-  }
+  const r = await fetch('/api/nodes/' + encodeURIComponent(selected.id()), { method: 'DELETE' });
+  if (r.ok) { loadGraph(); }
+  else { const d = await r.json().catch(() => ({})); alert(d.detail || 'Delete failed'); }
 });
 
-// Defer until after the browser has applied the flex layout and painted,
-// so Cytoscape reads correct container dimensions on first init.
+// ── Load / refresh ────────────────────────────────────────────────────────────
+
+async function loadGraph() {
+  const r    = await fetch('/api/graph');
+  const data = await r.json();
+  document.getElementById('stats').textContent =
+    `${data.nodes.length} nodes · ${data.edges.length} edges`;
+  prevIds = null;
+  document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('search').value = '';
+  buildCy(data);
+  closePanel();
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('refresh').addEventListener('click', loadGraph);
+
+// Defer first load until after flex layout is applied and painted
 requestAnimationFrame(() => requestAnimationFrame(loadGraph));
 </script>
 </body>
