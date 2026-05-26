@@ -18,7 +18,7 @@ cmd_start() {
     fi
     mkdir -p "$SCRIPT_DIR/.piupiu"
     echo "Starting PiuPiu..."
-    nohup python3 -m piupiu >> "$LOG_FILE" 2>&1 &
+    nohup bash -c "cd '$SCRIPT_DIR' && exec python3 -m piupiu" >> "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     sleep 1
     if _is_running; then
@@ -42,7 +42,7 @@ cmd_stop() {
     local i=0
     while kill -0 "$pid" 2>/dev/null; do
         sleep 0.5
-        (( i++ ))
+        i=$(( i + 1 ))
         if [ $i -ge 10 ]; then
             echo "Process did not exit — sending SIGKILL"
             kill -9 "$pid" 2>/dev/null || true
